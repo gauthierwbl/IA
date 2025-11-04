@@ -15,6 +15,5 @@ Cette application utilise des techniques d'intelligence artificielle prédictive
 - Python
 - Pandas
 - Scikit-learn
-- Flask / Django (selon le choix final)
-- Bibliothèques d'IA générative (comme TensorFlow ou PyTorch)
+
 
