@@ -18,10 +18,3 @@ Cette application utilise des techniques d'intelligence artificielle prédictive
 - Flask / Django (selon le choix final)
 - Bibliothèques d'IA générative (comme TensorFlow ou PyTorch)
 
-## Installation
-
-Pour installer et exécuter l'application, suivez ces étapes :
-
-1. Clonez le dépôt :
-   ```bash
-   git clone https://github.com/votre-utilisateur/votre-repo.git
