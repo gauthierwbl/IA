@@ -1,92 +1,103 @@
 import streamlit as st
-from model_utils import predict_popularity, explain_prediction
 
-# ==========================
-# CONFIGURATION DE LA PAGE
-# ==========================
+# Configuration de la page
 st.set_page_config(
-    page_title="Spotify Popularity Predictor",
-    page_icon="🎵",
+    page_title="Spotify Popularity AI",
+    page_icon="🎧",
     layout="centered"
 )
 
-# ==========================
-# TITRE
-# ==========================
-st.title("🎧 Spotify Popularity Predictor")
+# ======================
+# EN-TÊTE
+# ======================
+st.title("🎧 Spotify Popularity AI")
 st.markdown(
-    "Ajuste les paramètres audio d’un morceau et observe "
-    "la popularité estimée par le modèle d’intelligence artificielle."
+    """
+    **Une application d’intelligence artificielle dédiée à l’analyse et à la conception de musiques populaires.**  
+    Elle combine **machine learning prédictif** et **IA générative** pour comprendre *pourquoi* une musique fonctionne et *comment* en concevoir une avec un fort potentiel de popularité.
+    """
 )
 
-st.divider()
+st.markdown("---")
 
-# ==========================
-# PARAMÈTRES AUDIO
-# ==========================
-st.subheader("🎚️ Paramètres audio")
-
-danceability = st.slider("Danceability", 0.0, 1.0, 0.6, 0.01)
-energy = st.slider("Energy", 0.0, 1.0, 0.65, 0.01)
-loudness = st.slider("Loudness (dB)", -60.0, 0.0, -6.0, 0.5)
-speechiness = st.slider("Speechiness", 0.0, 1.0, 0.05, 0.01)
-acousticness = st.slider("Acousticness", 0.0, 1.0, 0.3, 0.01)
-instrumentalness = st.slider("Instrumentalness", 0.0, 1.0, 0.01, 0.01)
-liveness = st.slider("Liveness", 0.0, 1.0, 0.15, 0.01)
-valence = st.slider("Valence", 0.0, 1.0, 0.45, 0.01)
-tempo = st.slider("Tempo (BPM)", 60, 200, 110)
-duration_ms = st.slider("Duration (ms)", 60_000, 400_000, 225_000, step=1_000)
-
-# ==========================
-# GENRE MUSICAL
-# ==========================
-st.divider()
-st.subheader("🎼 Genre musical")
-
-GENRES = [
-    "pop", "rock", "hip-hop", "edm", "dance", "house",
-    "indie", "indie-pop", "electronic", "r-n-b",
-    "latin", "reggaeton", "j-pop", "k-pop",
-    "metal", "classical", "jazz", "blues", "country"
-]
-
-genre_choice = st.selectbox(
-    "Choisis un genre",
-    options=["Aucun"] + GENRES
+# ======================
+# CONTEXTE & OBJECTIFS
+# ======================
+st.markdown(
+    """
+    ### 🧠 Que fait cette application ?
+    
+    Cette application repose sur un **modèle de machine learning entraîné sur des données Spotify**  
+    (danceability, energy, tempo, loudness, genres, etc.).
+    
+    Elle permet :
+    - 📊 **d’estimer la popularité potentielle d’un morceau**
+    - 🔍 **d’expliquer les facteurs qui influencent cette popularité**
+    - 🎼 **de générer des paramètres musicaux optimisés à partir d’une description textuelle**
+    
+    👉 L’objectif est de **rendre l’IA compréhensible**, pas seulement performante.
+    """
 )
 
-genre_selected = None if genre_choice == "Aucun" else genre_choice
+st.markdown("---")
 
-# ==========================
-# PRÉDICTION
-# ==========================
-st.divider()
+# ======================
+# BLOCS FONCTIONNALITÉS
+# ======================
+col1, col2 = st.columns(2, gap="large")
 
-if st.button("🎯 Prédire la popularité"):
-    input_features = {
-        "danceability": danceability,
-        "energy": energy,
-        "loudness": loudness,
-        "speechiness": speechiness,
-        "acousticness": acousticness,
-        "instrumentalness": instrumentalness,
-        "liveness": liveness,
-        "valence": valence,
-        "tempo": tempo,
-        "duration_ms": duration_ms,
-    }
+with col1:
+    st.markdown("### 🔮 Prédiction de popularité")
+    st.markdown(
+        """
+        Analysez un morceau **à partir de ses caractéristiques audio** :
+        
+        - danceability  
+        - énergie  
+        - tempo  
+        - durée  
+        - genre musical  
+        
+        L’IA :
+        - prédit un **score de popularité (0–100)**  
+        - explique **les points forts et les points faibles**  
+        - fournit une **interprétation claire du potentiel du morceau**
+        """
+    )
+    st.markdown("")  # espace visuel
+    if st.button("👉 Accéder à la prédiction", use_container_width=True):
+        st.switch_page("pages/prediction.py")
 
-    prediction = predict_popularity(input_features, genre=genre_selected)
+with col2:
+    st.markdown("### 🎼 Génération musicale")
+    st.markdown(
+        """
+        Décrivez une musique **en langage naturel** :
+        
+        > *« Une pop énergique, joyeuse, faite pour les playlists estivales »*
+        
+        L’IA :
+        - interprète votre intention artistique  
+        - traduit le texte en **paramètres audio concrets**
+        - propose une **recette musicale cohérente et optimisée**
+        
+        *(Idéal pour la conception, l’idéation ou l’expérimentation musicale.)*
+        """
+    )
+    st.markdown("")  # espace visuel
+    if st.button("👉 Accéder à la génération", use_container_width=True):
+        st.switch_page("pages/generation.py")
 
-    st.success(f"🎵 Popularité estimée : **{prediction:.1f} / 100**")
+st.markdown("---")
 
-    commentary = explain_prediction(input_features, prediction)
-    st.markdown(commentary)
-
-
-    if prediction >= 70:
-        st.markdown("🔥 **Très fort potentiel commercial**")
-    elif prediction >= 50:
-        st.markdown("👍 **Bon potentiel**")
-    else:
-        st.markdown("⚠️ **Potentiel limité**")
+# ======================
+# PIED DE PAGE
+# ======================
+st.markdown(
+    """
+    🧪 **Projet IA — Analyse & Génération musicale**  
+    Machine Learning · Explainability · IA générative · Streamlit
+    
+    *L’IA ne remplace pas la créativité — elle l’augmente.*
+    """
+)
