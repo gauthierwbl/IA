@@ -1,5 +1,5 @@
 import streamlit as st
-from model_utils import predict_popularity
+from model_utils import predict_popularity, explain_prediction
 
 # ==========================
 # CONFIGURATION DE LA PAGE
@@ -79,6 +79,10 @@ if st.button("🎯 Prédire la popularité"):
     prediction = predict_popularity(input_features, genre=genre_selected)
 
     st.success(f"🎵 Popularité estimée : **{prediction:.1f} / 100**")
+
+    commentary = explain_prediction(input_features, prediction)
+    st.markdown(commentary)
+
 
     if prediction >= 70:
         st.markdown("🔥 **Très fort potentiel commercial**")

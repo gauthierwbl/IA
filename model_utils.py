@@ -52,3 +52,55 @@ def predict_popularity(user_features: dict, genre: str | None = None) -> float:
     prediction = model.predict(df)[0]
 
     return float(prediction)
+
+def explain_prediction(features: dict, score: float) -> str:
+    explanations_pos = []
+    explanations_neg = []
+
+    # Heuristiques simples basées sur l'analyse dataset
+    if features["danceability"] > 0.6:
+        explanations_pos.append("la musique est dansante")
+    elif features["danceability"] < 0.4:
+        explanations_neg.append("la musique est peu dansante")
+
+    if features["energy"] > 0.65:
+        explanations_pos.append("elle est énergique")
+    elif features["energy"] < 0.4:
+        explanations_neg.append("elle manque d’énergie")
+
+    if features["loudness"] > -7:
+        explanations_pos.append("le volume est bien adapté aux standards actuels")
+    elif features["loudness"] < -12:
+        explanations_neg.append("le volume est trop faible pour ressortir")
+
+    if features["acousticness"] > 0.5:
+        explanations_pos.append("le côté acoustique peut séduire un public de niche")
+
+    if features["instrumentalness"] > 0.5:
+        explanations_neg.append("le caractère instrumental limite l’audience")
+
+    if features["duration_ms"] < 150_000:
+        explanations_neg.append("la durée est trop courte")
+    elif features["duration_ms"] > 300_000:
+        explanations_neg.append("la durée est un peu longue pour le streaming")
+
+    # Construction du texte
+    explanation = f"🎧 **Analyse du score ({score:.1f}/100)**\n\n"
+
+    if explanations_pos:
+        explanation += "✅ **Points positifs** :\n"
+        for e in explanations_pos:
+            explanation += f"- {e}\n"
+
+    if explanations_neg:
+        explanation += "\n⚠️ **Points limitants** :\n"
+        for e in explanations_neg:
+            explanation += f"- {e}\n"
+
+    explanation += (
+        "\n📊 **Interprétation globale** :\n"
+        "Le modèle combine ces éléments pour estimer le potentiel de popularité. "
+        "Un bon équilibre entre énergie, danse et durée favorise un score élevé."
+    )
+
+    return explanation
