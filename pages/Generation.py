@@ -1,92 +1,41 @@
 import streamlit as st
 import pandas as pd
+from model_utils import extract_parameters, get_market_stats, generate_music_audio, get_composition_advice
 
-from model_utils import (
-    generate_audio_profile,
-    evaluate_generated_profile,
-    explain_prediction
-)
+st.set_page_config(page_title="Génération Créative", page_icon="🎼")
+st.title("🎼 Assistant de Création Musicale")
 
-# ==========================
-# CONFIG PAGE
-# ==========================
-st.set_page_config(page_title="Génération musicale", page_icon="🎼")
+user_query = st.text_area("Décrivez la musique que vous souhaitez créer :", placeholder="Ex: Un rock énergique à 120 BPM...")
 
-st.title("🎼 Génération musicale (IA générative)")
+if st.button("🪄 Analyser et Recommander"):
+    if user_query:
+        with st.spinner("Analyse sémantique et statistique..."):
+            p_in = extract_parameters(user_query)
+            p_opt, n_titles = get_market_stats(p_in['genre'], p_in['tempo'])
+            
+            # Stockage en session pour la génération audio plus tard
+            st.session_state.p_in = p_in
+            st.session_state.p_opt = p_opt
 
-st.markdown("""
-Cette fonctionnalité illustre la **partie générative** du projet.
+            keys_fr = ["Do", "Do#", "Ré", "Ré#", "Mi", "Fa", "Fa#", "Sol", "Sol#", "La", "La#", "Si"]
+            key_name = f"{keys_fr[int(p_opt['key'])]} {'Majeur' if p_opt['mode'] > 0.5 else 'Mineur'}"
 
-Contrairement à la prédiction, ici l’IA **ne reçoit pas une musique existante** :
-elle **propose automatiquement des paramètres audio** susceptibles de produire
-un morceau populaire selon les données Spotify.
-""")
+            st.subheader("📊 Paramètres recommandés")
+            col1, col2, col3 = st.columns(3)
+            col1.metric("Genre détecté", p_in['genre'].capitalize() if p_in['genre'] else "Standard")
+            col2.metric("Tempo idéal", f"{p_opt['tempo']:.0f} BPM")
+            col3.metric("Tonalité", key_name)
 
-st.markdown("---")
+            st.markdown(f"**Analyse basée sur {n_titles} morceaux populaires.**")
+            
+            st.subheader("💡 Conseils de composition")
+            advice = get_composition_advice(p_in, p_opt, key_name)
+            st.info(advice)
 
-# ==========================
-# CHOIX UTILISATEUR
-# ==========================
-st.subheader("🎧 Choix du style musical")
-
-genre = st.selectbox(
-    "Sélectionnez un genre musical",
-    [
-        "pop", "rock", "hip-hop", "electronic", "indie",
-        "jazz", "classical", "latin", "metal"
-    ]
-)
-
-st.markdown("""
-👉 L’IA va générer une configuration **cohérente avec ce genre**
-en se basant sur les caractéristiques moyennes observées
-dans les morceaux populaires du dataset.
-""")
-
-# ==========================
-# PROFIL DE BASE (DATA-DRIVEN)
-# ==========================
-base_profile = {
-    "danceability": 0.6,
-    "energy": 0.65,
-    "loudness": -7.0,
-    "speechiness": 0.05,
-    "acousticness": 0.3,
-    "instrumentalness": 0.01,
-    "liveness": 0.15,
-    "valence": 0.45,
-    "tempo": 110,
-    "duration_ms": 220_000,
-}
-
-# ==========================
-# GÉNÉRATION
-# ==========================
-if st.button("🎶 Générer une musique"):
-
-    generated_profile = generate_audio_profile(base_profile)
-
-    score = evaluate_generated_profile(generated_profile, genre)
-
-    st.success(f"⭐ Popularité estimée : **{score:.1f} / 100**")
-
-    st.markdown("### 🎛️ Paramètres audio générés")
-    st.dataframe(pd.DataFrame([generated_profile]).T, use_container_width=True)
-
-    st.markdown("### 🧠 Analyse de l’IA")
-    explanation = explain_prediction(generated_profile, score)
-    st.markdown(explanation)
-
-    st.info("""
-ℹ️ **Important**  
-Cette génération repose uniquement sur des **statistiques du dataset**
-et sur le **modèle prédictif entraîné**.
-
-➡️ La génération par **texte libre (prompt)** sera ajoutée ensuite
-à l’aide d’un **LLM (Mistral / OpenAI)**.
-""")
-
-st.markdown("---")
-
-if st.button("⬅️ Retour à l’accueil"):
-    st.switch_page("app.py")
+if "p_opt" in st.session_state:
+    st.divider()
+    st.subheader("🎹 Génération de l'extrait")
+    if st.button("🔊 Générer l'audio (MusicGen)"):
+        with st.spinner("Synthèse audio en cours (environ 30s)..."):
+            audio_data, rate = generate_music_audio(st.session_state.p_in, st.session_state.p_opt)
+            st.audio(audio_data, sample_rate=rate)

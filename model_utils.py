@@ -1,6 +1,14 @@
 import joblib
 import pandas as pd
 import numpy as np
+import os
+from dotenv import load_dotenv
+from langchain_mistralai.chat_models import ChatMistralAI
+from pydantic import BaseModel
+from typing import Optional
+from transformers import MusicgenForConditionalGeneration, AutoProcessor
+
+load_dotenv()
 
 # ==========================
 # CHARGEMENT DU MODÈLE
@@ -126,3 +134,59 @@ def evaluate_generated_profile(profile: dict, genre: str) -> float:
     Évalue une configuration générée via le modèle prédictif.
     """
     return predict_popularity(profile, genre)
+
+
+
+# =====================================
+# GÉNÉRATION DE RECOMMANDATIONS + AUDIO
+# =====================================
+
+class MusicParams(BaseModel):
+    genre: Optional[str] = None
+    tempo: Optional[int] = None
+    key: Optional[str] = None
+    duration: Optional[float] = None
+
+def get_llm():
+    return ChatMistralAI(model="mistral-small-latest", mistral_api_key=os.getenv("MISTRAL_API_KEY"))
+
+def extract_parameters(user_input):
+    llm = get_llm()
+    try:
+        return llm.with_structured_output(MusicParams).invoke(f"Extrait en JSON : {user_input}").model_dump()
+    except:
+        return {k: None for k in ["genre", "tempo", "key", "duration"]}
+
+def get_market_stats(genre=None, tempo=None):
+    df = pd.read_csv('archive/dataset.csv')
+    top = df[df.popularity >= df.popularity.quantile(0.8)]
+    
+    f = top[top.track_genre == genre] if genre and len(top[top.track_genre == genre]) > 10 else top
+    if tempo:
+        t_f = f[(f.tempo >= tempo-10) & (f.tempo <= tempo+10)]
+        f = t_f if len(t_f) >= 5 else top
+        
+    res = f[['danceability', 'energy', 'key', 'mode', 'valence', 'tempo', 'duration_ms']].median().to_dict()
+    if tempo: res['tempo'] = tempo
+    return res, len(f)
+
+def generate_music_audio(p_in, p_opt):
+    model_id = "facebook/musicgen-small"
+    processor = AutoProcessor.from_pretrained(model_id)
+    model = MusicgenForConditionalGeneration.from_pretrained(model_id)
+
+    genre = p_in['genre'] if p_in['genre'] else 'pop'
+    description = f"{genre} music, mood: {p_opt['valence']*100:.0f}% happy, {p_opt['tempo']:.0f} BPM"
+
+    inputs = processor(text=[description], padding=True, return_tensors="pt")
+    audio_values = model.generate(**inputs, max_new_tokens=256)
+    
+    sampling_rate = model.config.audio_encoder.sampling_rate
+    audio_data = audio_values.squeeze().detach().cpu().numpy().astype(np.float32)
+    
+    return audio_data, sampling_rate
+
+def get_composition_advice(p_in, p_opt, key_name):
+    llm = get_llm()
+    prompt = f"Donne 3 conseils courts (Rythme, Accords, Ambiance) pour : {p_in['genre']}, {p_opt['tempo']:.0f} BPM, {key_name}."
+    return llm.invoke(prompt).content
